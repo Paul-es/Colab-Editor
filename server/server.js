@@ -14,7 +14,7 @@ main()
 
 const io = require("socket.io")(process.env.PORT || 3001, {
   cors: {
-    origin: "http://colabtext.netlify.app",
+    origin: "https://colabeditor.web.app/",
     //origin: "http://localhost:3000",
     methods: ["GET", "POST"],
     credentials: true
