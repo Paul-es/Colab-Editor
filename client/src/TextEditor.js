@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import { io } from "socket.io-client";
+import Loader from "react-loader-spinner";
 import { useParams } from "react-router-dom";
 
 const INTERVAL = 2000;
@@ -14,14 +15,18 @@ const TOOLBAR_OPTIONS = [
 
 export default function TextEditor() {
   const [socket, setSocket] = useState();
+  const [spin, setSpin] = useState(true);
+
   const [quill, setQuill] = useState();
   const { id: documentId } = useParams();
 
   console.log(documentId);
 
   useEffect(() => {
-    const s = io("https://colab-text-editor.herokuapp.com", {transports:['websocket']} );
-  //const s = io("http://localhost:3001");
+    const s = io("https://colab-text-editor.herokuapp.com", {
+      transports: ["websocket"],
+    });
+    //const s = io("http://localhost:3001");
     setSocket(s);
 
     return () => {
@@ -39,6 +44,7 @@ export default function TextEditor() {
 
     return () => {
       quill.off("text-change", handler);
+
     };
   }, [socket, quill]);
 
@@ -59,20 +65,22 @@ export default function TextEditor() {
   useEffect(() => {
     if (socket == null || quill == null) return;
 
-  async  function load(){
-   await socket.once("load-document", (document) => {
-      quill.setContents(document);
-      quill.enable();
-    });
-    socket.emit("get-document", documentId);
-  }
-  load()
+    async function load() {
+      await socket.once("load-document", (document) => {
+        quill.setContents(document);
+        quill.enable();
+        setSpin(false)
+
+      });
+      socket.emit("get-document", documentId);
+    }
+    load();
   }, [socket, quill, documentId]);
 
   // save the document at paticular interval
   useEffect(() => {
     if (socket == null || quill == null) return;
-    
+
     const interval = setInterval(() => {
       socket.emit("save-document", quill.getContents());
     }, INTERVAL);
@@ -91,9 +99,26 @@ export default function TextEditor() {
       theme: "snow",
       modules: { toolbar: TOOLBAR_OPTIONS },
     });
+
     q.disable();
-    q.setText("Loading....");
+
     setQuill(q);
   }, []);
-  return <div className="container" ref={wrapperRef}></div>;
+  return (
+    <>
+
+    <div className="container" ref={wrapperRef}>
+    {spin ? (
+    <Loader
+    type="Bars"
+    color="#e32b2b"
+    height={100}
+    width={100}
+    className="spinner"
+    
+  />
+    ) :null } 
+    </div>
+    </>
+  );
 }
